@@ -843,13 +843,52 @@
                 <label>참석 여부</label>
                 <div style="display: flex; gap: 10px; justify-content: center; margin-top: 10px;">
                     <button class="btn" style="margin: 0;" onclick="submitAttendance(true)">참석합니다</button>
-                    <button class="btn" style="margin: 0; background-color: #888;" onclick="submitAttendance(false)">불참합니다</button>
+                    <button class="btn" style="margin: 0; background-color: #888;" onclick="submitAttendance(false); closeModal();">불참합니다</button>
                 </div>
+            </div>
+            <div class="form-group" style="display: flex; align-items: center; margin-top: 15px; justify-content: center;">
+                <input type="checkbox" id="do-not-show-today" style="margin-right: 10px; width: auto;">
+                <label for="do-not-show-today" style="margin-bottom: 0; cursor: pointer;">오늘 하루 열지 않기</label>
             </div>
         </div>
     </div>
 
     <script>
+        // 쿠키 관련 유틸리티 함수
+        function setCookie(name, value, days) {
+            let expires = "";
+            if (days) {
+                const date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = "; expires=" + date.toUTCString();
+            }
+            document.cookie = name + "=" + (value || "") + expires + "; path=/";
+        }
+        
+        function getCookie(name) {
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+            }
+            return null;
+        }
+        
+        // 모달 닫기 함수
+        function closeModal() {
+            const modal = document.getElementById('attendance-modal');
+            modal.style.display = 'none';
+            
+            // 오늘 하루 열지 않기 체크 여부 확인
+            const doNotShowToday = document.getElementById('do-not-show-today').checked;
+            if (doNotShowToday) {
+                // 오늘 날짜로 쿠키 설정 (1일 동안 유효)
+                setCookie('doNotShowAttendanceModal', 'true', 1);
+            }
+        }
+        
         // 스크롤 애니메이션
         document.addEventListener('DOMContentLoaded', function() {
             const fadeElements = document.querySelectorAll('.fade-in');
@@ -871,14 +910,23 @@
             // 스크롤 시 확인
             window.addEventListener('scroll', checkFade);
             
-            // 모달 표시
-            setTimeout(function() {
-                document.getElementById('attendance-modal').style.display = 'flex';
-            }, 2000);
+            // 모달 표시 여부 확인
+            const doNotShowModal = getCookie('doNotShowAttendanceModal');
+            if (!doNotShowModal) {
+                setTimeout(function() {
+                    document.getElementById('attendance-modal').style.display = 'flex';
+                }, 2000);
+            }
             
-            // 모달 닫기
-            document.querySelector('.close-modal').addEventListener('click', function() {
-                document.getElementById('attendance-modal').style.display = 'none';
+            // X 버튼 클릭 시 모달 닫기
+            document.querySelector('.close-modal').addEventListener('click', closeModal);
+
+            // 모달 외부 클릭 시 닫기
+            window.addEventListener('click', function(event) {
+                const modal = document.getElementById('attendance-modal');
+                if (event.target === modal) {
+                    closeModal();
+                }
             });
             
             // 방명록 제출
@@ -933,7 +981,7 @@
             console.log(`이름: ${name}, 인원: ${count}, 참석 여부: ${isAttending ? '참석' : '불참'}`);
             
             alert(`${name}님, ${isAttending ? '참석' : '불참'} 의사가 등록되었습니다. 감사합니다!`);
-            document.getElementById('attendance-modal').style.display = 'none';
+            closeModal();
         }
     </script>
 </body>
